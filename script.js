@@ -2,7 +2,7 @@
 const csvUrl = "https://docs.google.com/spreadsheets/d/1iQzRLCmtpgGHqYexl32m3EUY35_WgmXvi4CCHqdGzu4/export?format=csv";
 const myWhatsAppNumber = "2349022066352"; 
 
-// GOOGLE FORM LOGGING CONFIGURATION (Updated with your new Form ID)
+// UPDATED WITH YOUR NEW FORM ID
 const formActionUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdxwd7zTGNkOEqxTxrDyhBMJ6tWWAwdSzf09QoHfS4rwr-fzQ/formResponse";
 const formEntries = {
     name: "entry.740117733",
@@ -55,7 +55,7 @@ function closeAll() {
     document.getElementById('overlay').classList.remove('active');
 }
 
-/* --- 3. RENDERING & FILTERING --- */
+/* --- 3. RENDERING --- */
 function setupCategories() {
     const menu = document.getElementById('categoryMenu');
     menu.innerHTML = `<div class="nav-item active" onclick="filterCategory('All', this)">All Products</div>`;
@@ -72,13 +72,9 @@ function setupCategories() {
 
 function renderFeed(products) {
     const feed = document.getElementById('feed');
-    if (products.length === 0) {
-        feed.innerHTML = "<center style='margin-top:40px;'>No products found.</center>";
-        return;
-    }
-
+    if (!feed) return;
     feed.innerHTML = products.map(p => {
-        let buttonHTML = "";
+        let buttonHTML = `<button class="buy-btn" onclick="addToCart('${p.id}')">Add to Cart</button>`;
         let badgeHTML = "";
         
         if (p.status !== "Active" || p.stock <= 0) {
@@ -86,15 +82,12 @@ function renderFeed(products) {
             buttonHTML = `<button class="buy-btn" style="background:#ccc; color:#666" disabled>SOLD OUT</button>`;
         } else if (p.stock <= 3) {
             badgeHTML = `<span class="badge badge-low">🔥 ONLY ${p.stock} LEFT</span>`;
-            buttonHTML = `<button class="buy-btn" onclick="addToCart('${p.id}')">Add to Cart</button>`;
-        } else {
-            buttonHTML = `<button class="buy-btn" onclick="addToCart('${p.id}')">Add to Cart</button>`;
         }
 
         return `
             <div class="post">
-                <div class="post-header"><span>${p.cat}</span> <span style="color:#eee">...</span></div>
-                <img class="post-img" src="https://lh3.googleusercontent.com/u/0/d/${p.img}" alt="${p.title}" loading="lazy">
+                <div class="post-header"><span>${p.cat}</span></div>
+                <img class="post-img" src="https://lh3.googleusercontent.com/u/0/d/${p.img}" alt="${p.title}">
                 <div class="post-info">
                     ${badgeHTML}
                     <span class="post-price">₦${p.price}</span>
@@ -120,56 +113,38 @@ function filterCategory(cat, element) {
     renderFeed(filtered);
 }
 
-/* --- 4. CART SYSTEM --- */
+/* --- 4. CART --- */
 function addToCart(id) {
     const product = allProducts.find(p => p.id === id);
     if (!product || product.stock <= 0) return;
     cart.push(product);
-    saveCart();
-    updateCartUI();
-    toggleCart(); 
-}
-
-function removeFromCart(index) {
-    cart.splice(index, 1);
-    saveCart();
-    updateCartUI();
-}
-
-function saveCart() {
     localStorage.setItem('microCart', JSON.stringify(cart));
+    updateCartUI();
+    toggleCart();
 }
+function removeFromCart(index) { cart.splice(index, 1); localStorage.setItem('microCart', JSON.stringify(cart)); updateCartUI(); }
 
 function updateCartUI() {
     const cartCount = document.getElementById('cartCount');
     const cartItems = document.getElementById('cartItems');
     const cartTotal = document.getElementById('cartTotal');
+    if(!cartCount) return;
     cartCount.innerText = cart.length;
     let total = 0;
     cartItems.innerHTML = cart.map((item, index) => {
         total += parseInt(item.price);
-        return `<div class="cart-item">
-            <img src="https://lh3.googleusercontent.com/u/0/d/${item.img}">
-            <div style="flex:1"><div style="font-weight:bold">${item.title}</div><div>₦${item.price}</div></div>
-            <button onclick="removeFromCart(${index})" class="close-btn" style="color:red">×</button>
-        </div>`;
+        return `<div class="cart-item"><img src="https://lh3.googleusercontent.com/u/0/d/${item.img}"><div style="flex:1"><b>${item.title}</b><div>₦${item.price}</div></div><button onclick="removeFromCart(${index})" class="close-btn">×</button></div>`;
     }).join('');
-    if(cart.length === 0) cartItems.innerHTML = "<center>Cart is empty</center>";
     cartTotal.innerText = `₦${total}`;
     document.getElementById('modalTotal').innerText = `₦${total}`;
 }
 
-/* --- 5. CHECKOUT & WHATSAPP LOGGING --- */
+/* --- 5. CHECKOUT ENGINE --- */
 function openCheckout() {
     if (cart.length === 0) return;
     toggleCart();
     document.getElementById('checkoutModal').classList.add('active');
     document.getElementById('overlay').classList.add('active');
-}
-
-function closeCheckout() {
-    document.getElementById('checkoutModal').classList.remove('active');
-    document.getElementById('overlay').classList.remove('active');
 }
 
 function sendOrder(event) {
@@ -188,30 +163,28 @@ function sendOrder(event) {
 
     const fullDetails = `Total: ₦${total}\nItems:\n${itemSummary}`;
 
-    // --- PART A: LOG TO GOOGLE SHEET (SILENT) ---
-    const formData = new FormData();
-    formData.append(formEntries.name, name);
-    formData.append(formEntries.phone, phone);
-    formData.append(formEntries.address, address);
-    formData.append(formEntries.details, fullDetails);
+    // --- PART A: LOG TO GOOGLE SHEET (Using URLSearchParams for reliability) ---
+    const logData = new URLSearchParams();
+    logData.append(formEntries.name, name);
+    logData.append(formEntries.phone, phone);
+    logData.append(formEntries.address, address);
+    logData.append(formEntries.details, fullDetails);
 
-    // Fetch without waiting (Asynchronous)
     fetch(formActionUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        body: formData
-    });
+        method: "POST",
+        mode: "no-cors",
+        body: logData
+    }).catch(e => console.log("Silent Log failed, but continuing to WhatsApp."));
 
     // --- PART B: WHATSAPP REDIRECT ---
     const message = `*📦 NEW ORDER RECEIVED*\n\n*Name:* ${name}\n*Phone:* ${phone}\n*Address:* ${address}\n\n*Items Ordered:*\n${itemSummary}\n*GRAND TOTAL:* ₦${total}`;
     const whatsappUrl = `https://wa.me/${myWhatsAppNumber}?text=${encodeURIComponent(message)}`;
     
-    // Open WhatsApp
     window.open(whatsappUrl, '_blank');
 
-    // Reset Site
+    // Reset UI
     cart = [];
-    saveCart();
+    localStorage.setItem('microCart', JSON.stringify(cart));
     updateCartUI();
     closeAll();
 }
