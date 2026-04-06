@@ -2,8 +2,8 @@
 const csvUrl = "https://docs.google.com/spreadsheets/d/1iQzRLCmtpgGHqYexl32m3EUY35_WgmXvi4CCHqdGzu4/export?format=csv";
 const myWhatsAppNumber = "2349022066352"; 
 
-// GOOGLE FORM LOGGING CONFIGURATION
-const formActionUrl = "https://docs.google.com/forms/d/e/1aNjngugM7vMq-5PUg_jGFAjAVTh4FfePdq9IOLjpmIo/formResponse";
+// GOOGLE FORM LOGGING CONFIGURATION (Updated with your new Form ID)
+const formActionUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdxwd7zTGNkOEqxTxrDyhBMJ6tWWAwdSzf09QoHfS4rwr-fzQ/formResponse";
 const formEntries = {
     name: "entry.740117733",
     phone: "entry.1869179273",
@@ -31,8 +31,8 @@ async function loadData() {
                 desc: cols[3]?.trim(),
                 cat: cols[4]?.trim(),
                 img: cols[5]?.trim(),
-                status: cols[6]?.trim(), // Active/Inactive
-                stock: parseInt(cols[7]?.trim()) || 0 // Stock Column
+                status: cols[6]?.trim(), 
+                stock: parseInt(cols[7]?.trim()) || 0 
             };
         }).filter(p => p.title && p.img);
 
@@ -41,25 +41,13 @@ async function loadData() {
         updateCartUI();
     } catch (e) {
         console.error("Error loading products:", e);
-        document.getElementById('feed').innerHTML = "<center style='margin-top:50px;'>Error loading store.</center>";
     }
 }
 
 /* --- 2. UI TOGGLES --- */
-function toggleSearch() { 
-    document.getElementById('searchContainer').classList.toggle('hidden'); 
-}
-
-function toggleNav() { 
-    document.getElementById('navSidebar').classList.toggle('open'); 
-    document.getElementById('overlay').classList.toggle('active'); 
-}
-
-function toggleCart() { 
-    document.getElementById('cartSidebar').classList.toggle('open'); 
-    document.getElementById('overlay').classList.toggle('active'); 
-}
-
+function toggleSearch() { document.getElementById('searchContainer').classList.toggle('hidden'); }
+function toggleNav() { document.getElementById('navSidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }
+function toggleCart() { document.getElementById('cartSidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }
 function closeAll() {
     document.getElementById('navSidebar').classList.remove('open');
     document.getElementById('cartSidebar').classList.remove('open');
@@ -90,7 +78,6 @@ function renderFeed(products) {
     }
 
     feed.innerHTML = products.map(p => {
-        // STOCK & SCARCITY LOGIC
         let buttonHTML = "";
         let badgeHTML = "";
         
@@ -122,10 +109,7 @@ function renderFeed(products) {
 
 function filterProducts() {
     const query = document.getElementById('searchBar').value.toLowerCase();
-    const filtered = allProducts.filter(p => 
-        p.title.toLowerCase().includes(query) || 
-        p.cat.toLowerCase().includes(query)
-    );
+    const filtered = allProducts.filter(p => p.title.toLowerCase().includes(query) || p.cat.toLowerCase().includes(query));
     renderFeed(filtered);
 }
 
@@ -140,7 +124,6 @@ function filterCategory(cat, element) {
 function addToCart(id) {
     const product = allProducts.find(p => p.id === id);
     if (!product || product.stock <= 0) return;
-    
     cart.push(product);
     saveCart();
     updateCartUI();
@@ -161,24 +144,16 @@ function updateCartUI() {
     const cartCount = document.getElementById('cartCount');
     const cartItems = document.getElementById('cartItems');
     const cartTotal = document.getElementById('cartTotal');
-    
     cartCount.innerText = cart.length;
-    
     let total = 0;
     cartItems.innerHTML = cart.map((item, index) => {
         total += parseInt(item.price);
-        return `
-            <div class="cart-item">
-                <img src="https://lh3.googleusercontent.com/u/0/d/${item.img}">
-                <div style="flex:1">
-                    <div style="font-weight:bold">${item.title}</div>
-                    <div>₦${item.price}</div>
-                </div>
-                <button onclick="removeFromCart(${index})" class="close-btn" style="color:red">×</button>
-            </div>
-        `;
+        return `<div class="cart-item">
+            <img src="https://lh3.googleusercontent.com/u/0/d/${item.img}">
+            <div style="flex:1"><div style="font-weight:bold">${item.title}</div><div>₦${item.price}</div></div>
+            <button onclick="removeFromCart(${index})" class="close-btn" style="color:red">×</button>
+        </div>`;
     }).join('');
-    
     if(cart.length === 0) cartItems.innerHTML = "<center>Cart is empty</center>";
     cartTotal.innerText = `₦${total}`;
     document.getElementById('modalTotal').innerText = `₦${total}`;
@@ -197,8 +172,8 @@ function closeCheckout() {
     document.getElementById('overlay').classList.remove('active');
 }
 
-async function sendOrder(event) {
-    event.preventDefault(); // Prevents page refresh
+function sendOrder(event) {
+    event.preventDefault();
 
     const name = document.getElementById('custName').value;
     const phone = document.getElementById('custPhone').value;
@@ -211,30 +186,27 @@ async function sendOrder(event) {
         itemSummary += `${i+1}. ${item.title} (₦${item.price})\n`;
     });
 
-    const fullDetails = `Total Order: ₦${total}\nItems:\n${itemSummary}`;
+    const fullDetails = `Total: ₦${total}\nItems:\n${itemSummary}`;
 
-    // --- PART A: SILENT GOOGLE FORM LOG ---
-    const formData = new URLSearchParams();
+    // --- PART A: LOG TO GOOGLE SHEET (SILENT) ---
+    const formData = new FormData();
     formData.append(formEntries.name, name);
     formData.append(formEntries.phone, phone);
     formData.append(formEntries.address, address);
     formData.append(formEntries.details, fullDetails);
 
-    try {
-        // This sends the data to your Google Sheet in the background
-        fetch(formActionUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: formData
-        });
-    } catch (e) {
-        console.log("Form log skipped");
-    }
+    // Fetch without waiting (Asynchronous)
+    fetch(formActionUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: formData
+    });
 
     // --- PART B: WHATSAPP REDIRECT ---
     const message = `*📦 NEW ORDER RECEIVED*\n\n*Name:* ${name}\n*Phone:* ${phone}\n*Address:* ${address}\n\n*Items Ordered:*\n${itemSummary}\n*GRAND TOTAL:* ₦${total}`;
-    
     const whatsappUrl = `https://wa.me/${myWhatsAppNumber}?text=${encodeURIComponent(message)}`;
+    
+    // Open WhatsApp
     window.open(whatsappUrl, '_blank');
 
     // Reset Site
@@ -242,8 +214,6 @@ async function sendOrder(event) {
     saveCart();
     updateCartUI();
     closeAll();
-    alert("Order summary sent to WhatsApp!");
 }
 
-/* --- BOOTSTRAP --- */
 loadData();
