@@ -14,12 +14,12 @@ const formEntries = {
 /* --- STATE MANAGEMENT --- */
 let allProducts = [];
 let cart = JSON.parse(localStorage.getItem('microCart')) || [];
+let likedItems = JSON.parse(localStorage.getItem('microLikes')) || {};
 
 /* --- 1. INITIAL LOAD & CUSTOM LOADER --- */
 async function loadData() {
     const feed = document.getElementById('feed');
     
-    // Inject the "Living Loader" (Airplane + Dots)
     feed.innerHTML = `
         <div class="loader">
             <div class="plane-animation">✈️</div>
@@ -40,15 +40,20 @@ async function loadData() {
         
         allProducts = rows.map(row => {
             const cols = row.split(",");
+            const id = cols[0]?.trim();
+            // Seed a "Base Like" count based on ID to make the store look established
+            const baseLikes = (parseInt(id.replace(/\D/g,'')) % 50) + 5; 
+            
             return {
-                id: cols[0]?.trim(),
+                id: id,
                 title: cols[1]?.trim(),
                 price: cols[2]?.trim(),
                 desc: cols[3]?.trim(),
                 cat: cols[4]?.trim(),
                 img: cols[5]?.trim(),
                 status: cols[6]?.trim(), 
-                stock: parseInt(cols[7]?.trim()) || 0 
+                stock: parseInt(cols[7]?.trim()) || 0,
+                baseLikes: baseLikes
             };
         }).filter(p => p.title && p.img);
 
@@ -118,17 +123,27 @@ function renderFeed(products) {
             badgeHTML = `<span class="badge badge-low">🔥 ONLY ${p.stock} LEFT</span>`;
         }
 
+        const isLiked = likedItems[p.id] ? 'active' : '';
+        const currentLikes = p.baseLikes + (likedItems[p.id] ? 1 : 0);
+
         return `
-            <div class="post">
+            <div class="post" id="post-${p.id}">
                 <div class="post-header"><span>${p.cat}</span> <span style="color:#ccc">...</span></div>
                 
-                <div class="post-img-container" ondblclick="handleLike(this)">
+                <div class="post-img-container" ondblclick="handleLike('${p.id}')">
                     <div class="heart-pop">❤️</div>
                     <img class="post-img" src="https://lh3.googleusercontent.com/u/0/d/${p.img}" alt="${p.title}" loading="lazy">
                 </div>
 
+                <div class="social-action-bar">
+                    <span class="action-icon like-icon ${isLiked}" onclick="handleLike('${p.id}')">
+                        ${likedItems[p.id] ? '❤️' : '🤍'}
+                    </span>
+                    <span class="action-icon" onclick="shareProduct('${p.title}', '${p.id}')">🔗</span>
+                </div>
+
                 <div class="post-info">
-                    <span class="share-btn" onclick="shareProduct('${p.title}', '${p.id}')">🔗</span>
+                    <div class="like-count"><b>${currentLikes} likes</b></div>
                     ${badgeHTML}
                     <span class="post-price">₦${p.price}</span>
                     <span class="post-title">${p.title}</span>
@@ -156,26 +171,48 @@ function filterCategory(cat, element) {
 }
 
 /* --- 4. SOCIAL LOGIC (LIKE & SHARE) --- */
-function handleLike(container) {
-    const heart = container.querySelector('.heart-pop');
-    heart.classList.remove('animate-heart');
-    void heart.offsetWidth; // Force reflow
-    heart.classList.add('animate-heart');
+function handleLike(id) {
+    const post = document.getElementById(`post-${id}`);
+    const heartPop = post.querySelector('.heart-pop');
+    const likeIcon = post.querySelector('.like-icon');
+    const likeText = post.querySelector('.like-count b');
+    const product = allProducts.find(p => p.id === id);
+
+    // 1. Trigger Visual Heart Animation
+    heartPop.classList.remove('animate-heart');
+    void heartPop.offsetWidth; 
+    heartPop.classList.add('animate-heart');
+
+    // 2. Toggle Like State
+    if (!likedItems[id]) {
+        likedItems[id] = true;
+        likeIcon.innerHTML = '❤️';
+        likeIcon.classList.add('active');
+    } else {
+        delete likedItems[id];
+        likeIcon.innerHTML = '🤍';
+        likeIcon.classList.remove('active');
+    }
+
+    // 3. Update UI Text
+    const newCount = product.baseLikes + (likedItems[id] ? 1 : 0);
+    likeText.innerText = `${newCount} likes`;
+
+    // 4. Save to Memory
+    localStorage.setItem('microLikes', JSON.stringify(likedItems));
 }
 
 function shareProduct(title, id) {
-    // Generates a direct URL to the website
     const url = window.location.href;
     if (navigator.share) {
         navigator.share({
             title: `MicroStore | ${title}`,
-            text: `Look what I found on MicroStore: ${title}`,
+            text: `Check this out on MicroStore!`,
             url: url
-        }).catch(err => console.log("Share failed", err));
+        }).catch(() => {});
     } else {
-        // Fallback: Copy to clipboard
         navigator.clipboard.writeText(url);
-        alert("Link copied to clipboard!");
+        alert("Link copied!");
     }
 }
 
@@ -188,9 +225,7 @@ function addToCart(id) {
     saveCart();
     updateCartUI();
     
-    // Visual feedback on the cart icon (quick bounce)
     const icon = document.querySelector('.cart-icon');
-    icon.style.transition = "0.2s";
     icon.style.transform = "scale(1.2)";
     setTimeout(() => icon.style.transform = "scale(1)", 200);
 }
@@ -257,32 +292,18 @@ function sendOrder(event) {
 
     const fullDetails = `Total: ₦${total}\nItems:\n${itemSummary}`;
 
-    // --- PART A: SILENT FORM LOG (Invisible Iframe) ---
     const iframeId = "hidden_iframe_" + Date.now();
     const iframe = document.createElement('iframe');
-    iframe.name = iframeId;
-    iframe.id = iframeId;
-    iframe.style.display = "none";
+    iframe.name = iframeId; iframe.id = iframeId; iframe.style.display = "none";
     document.body.appendChild(iframe);
 
     const hiddenForm = document.createElement('form');
-    hiddenForm.action = formActionUrl;
-    hiddenForm.method = "POST";
-    hiddenForm.target = iframeId;
-    hiddenForm.style.display = "none";
+    hiddenForm.action = formActionUrl; hiddenForm.method = "POST"; hiddenForm.target = iframeId; hiddenForm.style.display = "none";
 
-    const dataMap = {
-        [formEntries.name]: name,
-        [formEntries.phone]: phone,
-        [formEntries.address]: address,
-        [formEntries.details]: fullDetails
-    };
+    const dataMap = { [formEntries.name]: name, [formEntries.phone]: phone, [formEntries.address]: address, [formEntries.details]: fullDetails };
 
     for (const key in dataMap) {
-        const input = document.createElement('input');
-        input.type = "hidden";
-        input.name = key;
-        input.value = dataMap[key];
+        const input = document.createElement('input'); input.type = "hidden"; input.name = key; input.value = dataMap[key];
         hiddenForm.appendChild(input);
     }
 
@@ -294,13 +315,9 @@ function sendOrder(event) {
         if(document.body.contains(iframe)) document.body.removeChild(iframe);
     }, 2000);
 
-    // --- PART B: WHATSAPP REDIRECT ---
     const message = `*📦 NEW ORDER RECEIVED*\n\n*Name:* ${name}\n*Phone:* ${phone}\n*Address:* ${address}\n\n*Items Ordered:*\n${itemSummary}\n*GRAND TOTAL:* ₦${total}`;
-    const whatsappUrl = `https://wa.me/${myWhatsAppNumber}?text=${encodeURIComponent(message)}`;
-    
-    window.open(whatsappUrl, '_blank');
+    window.open(`https://wa.me/${myWhatsAppNumber}?text=${encodeURIComponent(message)}`, '_blank');
 
-    // Reset UI
     cart = [];
     localStorage.setItem('microCart', JSON.stringify(cart));
     updateCartUI();
