@@ -2,7 +2,7 @@
 const csvUrl = "https://docs.google.com/spreadsheets/d/1iQzRLCmtpgGHqYexl32m3EUY35_WgmXvi4CCHqdGzu4/export?format=csv";
 const myWhatsAppNumber = "2349022066352"; 
 
-// NEW GOOGLE FORM LOGGING CONFIG (Invisible Iframe Method)
+// UPDATED GOOGLE FORM LOGGING (Invisible Iframe Method)
 const formActionUrl = "https://docs.google.com/forms/d/e/1FAIpQLScTKqoankmnGROcBf84r4fyWolrfTH2NEdGSI7MOyW_RycqEQ/formResponse";
 const formEntries = {
     name: "entry.980833548",
@@ -51,7 +51,7 @@ function toggleCart() { document.getElementById('cartSidebar').classList.toggle(
 function closeAll() {
     document.getElementById('navSidebar').classList.remove('open');
     document.getElementById('cartSidebar').classList.remove('open');
-    document.getElementById('checkoutModal').classList.remove('active');
+    if(document.getElementById('checkoutModal')) document.getElementById('checkoutModal').classList.remove('active');
     document.getElementById('overlay').classList.remove('active');
 }
 
@@ -136,10 +136,10 @@ function updateCartUI() {
         return `<div class="cart-item"><img src="https://lh3.googleusercontent.com/u/0/d/${item.img}"><div style="flex:1"><b>${item.title}</b><div>₦${item.price}</div></div><button onclick="removeFromCart(${index})" class="close-btn" style="color:red">×</button></div>`;
     }).join('');
     cartTotal.innerText = `₦${total}`;
-    document.getElementById('modalTotal').innerText = `₦${total}`;
+    if(document.getElementById('modalTotal')) document.getElementById('modalTotal').innerText = `₦${total}`;
 }
 
-/* --- 5. THE WHATSAPP + BULLETPROOF LOGGING ENGINE --- */
+/* --- 5. CHECKOUT & BULLETPROOF LOGGING --- */
 function openCheckout() {
     if (cart.length === 0) return;
     toggleCart();
@@ -164,7 +164,6 @@ function sendOrder(event) {
     const fullDetails = `Total: ₦${total}\nItems:\n${itemSummary}`;
 
     // --- PART A: THE BULLETPROOF "SILENT" LOG ---
-    // 1. Create a hidden iframe
     const iframeId = "hidden_iframe_" + Date.now();
     const iframe = document.createElement('iframe');
     iframe.name = iframeId;
@@ -172,14 +171,12 @@ function sendOrder(event) {
     iframe.style.display = "none";
     document.body.appendChild(iframe);
 
-    // 2. Create a hidden form targeting that iframe
     const hiddenForm = document.createElement('form');
     hiddenForm.action = formActionUrl;
     hiddenForm.method = "POST";
     hiddenForm.target = iframeId;
     hiddenForm.style.display = "none";
 
-    // 3. Map entries to the hidden form
     const dataMap = {
         [formEntries.name]: name,
         [formEntries.phone]: phone,
@@ -195,13 +192,13 @@ function sendOrder(event) {
         hiddenForm.appendChild(input);
     }
 
-    // 4. Submit and cleanup
     document.body.appendChild(hiddenForm);
     hiddenForm.submit();
     
+    // Cleanup iframe/form after 2 seconds
     setTimeout(() => {
-        document.body.removeChild(hiddenForm);
-        document.body.removeChild(iframe);
+        if(document.body.contains(hiddenForm)) document.body.removeChild(hiddenForm);
+        if(document.body.contains(iframe)) document.body.removeChild(iframe);
     }, 2000);
 
     // --- PART B: OPEN WHATSAPP ---
