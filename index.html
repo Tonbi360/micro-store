@@ -4,50 +4,104 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MicroStore | Social Feed</title>
+    <!-- Linking to your separate CSS file -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- STICKY HEADER -->
+    <!-- 1. STICKY HEADER -->
     <header>
         <div class="top-bar">
-            <div class="logo">MicroStore</div>
-            <div class="cart-icon" onclick="toggleCart()">
-                🛒 <span id="cartCount">0</span>
+            <!-- Hamburger Menu for Categories -->
+            <div class="menu-btn" onclick="toggleNav()">☰</div>
+            
+            <!-- Logo as a Home Link -->
+            <a href="index.html" class="logo">MicroStore</a>
+            
+            <div class="header-right">
+                <!-- Toggleable Search Button -->
+                <span class="search-icon" onclick="toggleSearch()">🔍</span>
+                <!-- Cart Icon with Counter -->
+                <div class="cart-icon" onclick="toggleCart()">
+                    🛒 <span id="cartCount">0</span>
+                </div>
             </div>
         </div>
-        <div class="search-box">
+        
+        <!-- Foldable Search Bar (Hidden by default) -->
+        <div id="searchContainer" class="search-box hidden">
             <input type="text" id="searchBar" placeholder="Search products..." onkeyup="filterProducts()">
-        </div>
-        <div class="category-nav" id="categoryNav">
-            <button class="cat-btn active" onclick="filterCategory('All', this)">All</button>
         </div>
     </header>
 
-    <!-- PRODUCT FEED -->
-    <div class="feed" id="feed">
-        <div class="loader">Loading your feed...</div>
+    <!-- 2. NAVIGATION SIDEBAR (LEFT) - CATEGORIES -->
+    <div id="navSidebar" class="nav-sidebar">
+        <div class="nav-header">
+            <h3>Categories</h3>
+            <button class="close-btn" onclick="toggleNav()">×</button>
+        </div>
+        <div id="categoryMenu" class="nav-links">
+            <div class="nav-item active" onclick="filterCategory('All', this)">All Products</div>
+            <!-- Categories will be injected here by script.js -->
+        </div>
     </div>
 
-    <!-- STEP 4: SHOPPING CART SIDEBAR -->
+    <!-- 3. PRODUCT FEED (The Social Look) -->
+    <main class="feed" id="feed">
+        <div class="loader">Loading your feed...</div>
+    </main>
+
+    <!-- 4. SHOPPING CART SIDEBAR (RIGHT) -->
     <div id="cartSidebar" class="cart-sidebar">
         <div class="cart-header">
             <h2>Your Cart</h2>
             <button class="close-btn" onclick="toggleCart()">×</button>
         </div>
         <div id="cartItems" class="cart-items-list">
-            <!-- Items added here by JS -->
+            <!-- Items added here by script.js -->
         </div>
         <div class="cart-footer">
             <div class="total-row">
                 <span>Total:</span>
                 <span id="cartTotal">₦0</span>
             </div>
-            <button class="checkout-btn" onclick="checkout()">Proceed to Checkout</button>
+            <!-- This button now opens the Checkout Modal -->
+            <button class="checkout-btn" onclick="openCheckout()">Proceed to Checkout</button>
         </div>
     </div>
-    <div id="overlay" class="overlay" onclick="toggleCart()"></div>
 
+    <!-- 5. CHECKOUT MODAL (The WhatsApp Order Form) -->
+    <div id="checkoutModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Order Details</h3>
+                <button class="close-btn" onclick="closeCheckout()">×</button>
+            </div>
+            <form id="orderForm" onsubmit="sendOrder(event)">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="custName" placeholder="Enter your name" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" id="custPhone" placeholder="Enter phone number" required>
+                </div>
+                <div class="form-group">
+                    <label>Delivery Address</label>
+                    <textarea id="custAddress" placeholder="Enter full address" required></textarea>
+                </div>
+                <div class="order-summary">
+                    <p>Total Amount: <span id="modalTotal">₦0</span></p>
+                </div>
+                <button type="submit" class="confirm-btn">Confirm & Order via WhatsApp</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- BACKGROUND OVERLAY (Closes all sidebars/modals) -->
+    <div id="overlay" class="overlay" onclick="closeAll()"></div>
+
+    <!-- Linking to your separate JS file -->
     <script src="script.js"></script>
 </body>
-</html>
+    </html>
