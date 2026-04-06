@@ -1,2 +1,53 @@
-Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2026-04-06 01:54:42
-Current User's Login: Tonbi360
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MicroStore | Social Feed</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- STICKY HEADER -->
+    <header>
+        <div class="top-bar">
+            <div class="logo">MicroStore</div>
+            <div class="cart-icon" onclick="toggleCart()">
+                🛒 <span id="cartCount">0</span>
+            </div>
+        </div>
+        <div class="search-box">
+            <input type="text" id="searchBar" placeholder="Search products..." onkeyup="filterProducts()">
+        </div>
+        <div class="category-nav" id="categoryNav">
+            <button class="cat-btn active" onclick="filterCategory('All', this)">All</button>
+        </div>
+    </header>
+
+    <!-- PRODUCT FEED -->
+    <div class="feed" id="feed">
+        <div class="loader">Loading your feed...</div>
+    </div>
+
+    <!-- STEP 4: SHOPPING CART SIDEBAR -->
+    <div id="cartSidebar" class="cart-sidebar">
+        <div class="cart-header">
+            <h2>Your Cart</h2>
+            <button class="close-btn" onclick="toggleCart()">×</button>
+        </div>
+        <div id="cartItems" class="cart-items-list">
+            <!-- Items added here by JS -->
+        </div>
+        <div class="cart-footer">
+            <div class="total-row">
+                <span>Total:</span>
+                <span id="cartTotal">₦0</span>
+            </div>
+            <button class="checkout-btn" onclick="checkout()">Proceed to Checkout</button>
+        </div>
+    </div>
+    <div id="overlay" class="overlay" onclick="toggleCart()"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
