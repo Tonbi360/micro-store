@@ -2,13 +2,13 @@
 const csvUrl = "https://docs.google.com/spreadsheets/d/1iQzRLCmtpgGHqYexl32m3EUY35_WgmXvi4CCHqdGzu4/export?format=csv";
 const myWhatsAppNumber = "2349022066352"; 
 
-// UPDATED WITH YOUR NEW FORM ID
-const formActionUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdxwd7zTGNkOEqxTxrDyhBMJ6tWWAwdSzf09QoHfS4rwr-fzQ/formResponse";
+// NEW GOOGLE FORM LOGGING CONFIG (Invisible Iframe Method)
+const formActionUrl = "https://docs.google.com/forms/d/e/1FAIpQLScTKqoankmnGROcBf84r4fyWolrfTH2NEdGSI7MOyW_RycqEQ/formResponse";
 const formEntries = {
-    name: "entry.740117733",
-    phone: "entry.1869179273",
-    address: "entry.1133397450",
-    details: "entry.1045888552"
+    name: "entry.980833548",
+    phone: "entry.936037984",
+    address: "entry.2118146560",
+    details: "entry.1531993443"
 };
 
 /* --- STATE MANAGEMENT --- */
@@ -55,7 +55,7 @@ function closeAll() {
     document.getElementById('overlay').classList.remove('active');
 }
 
-/* --- 3. RENDERING --- */
+/* --- 3. RENDERING & FILTERING --- */
 function setupCategories() {
     const menu = document.getElementById('categoryMenu');
     menu.innerHTML = `<div class="nav-item active" onclick="filterCategory('All', this)">All Products</div>`;
@@ -86,7 +86,7 @@ function renderFeed(products) {
 
         return `
             <div class="post">
-                <div class="post-header"><span>${p.cat}</span></div>
+                <div class="post-header"><span>${p.cat}</span> <span style="color:#eee">...</span></div>
                 <img class="post-img" src="https://lh3.googleusercontent.com/u/0/d/${p.img}" alt="${p.title}">
                 <div class="post-info">
                     ${badgeHTML}
@@ -133,13 +133,13 @@ function updateCartUI() {
     let total = 0;
     cartItems.innerHTML = cart.map((item, index) => {
         total += parseInt(item.price);
-        return `<div class="cart-item"><img src="https://lh3.googleusercontent.com/u/0/d/${item.img}"><div style="flex:1"><b>${item.title}</b><div>₦${item.price}</div></div><button onclick="removeFromCart(${index})" class="close-btn">×</button></div>`;
+        return `<div class="cart-item"><img src="https://lh3.googleusercontent.com/u/0/d/${item.img}"><div style="flex:1"><b>${item.title}</b><div>₦${item.price}</div></div><button onclick="removeFromCart(${index})" class="close-btn" style="color:red">×</button></div>`;
     }).join('');
     cartTotal.innerText = `₦${total}`;
     document.getElementById('modalTotal').innerText = `₦${total}`;
 }
 
-/* --- 5. CHECKOUT ENGINE --- */
+/* --- 5. THE WHATSAPP + BULLETPROOF LOGGING ENGINE --- */
 function openCheckout() {
     if (cart.length === 0) return;
     toggleCart();
@@ -163,26 +163,54 @@ function sendOrder(event) {
 
     const fullDetails = `Total: ₦${total}\nItems:\n${itemSummary}`;
 
-    // --- PART A: LOG TO GOOGLE SHEET (Using URLSearchParams for reliability) ---
-    const logData = new URLSearchParams();
-    logData.append(formEntries.name, name);
-    logData.append(formEntries.phone, phone);
-    logData.append(formEntries.address, address);
-    logData.append(formEntries.details, fullDetails);
+    // --- PART A: THE BULLETPROOF "SILENT" LOG ---
+    // 1. Create a hidden iframe
+    const iframeId = "hidden_iframe_" + Date.now();
+    const iframe = document.createElement('iframe');
+    iframe.name = iframeId;
+    iframe.id = iframeId;
+    iframe.style.display = "none";
+    document.body.appendChild(iframe);
 
-    fetch(formActionUrl, {
-        method: "POST",
-        mode: "no-cors",
-        body: logData
-    }).catch(e => console.log("Silent Log failed, but continuing to WhatsApp."));
+    // 2. Create a hidden form targeting that iframe
+    const hiddenForm = document.createElement('form');
+    hiddenForm.action = formActionUrl;
+    hiddenForm.method = "POST";
+    hiddenForm.target = iframeId;
+    hiddenForm.style.display = "none";
 
-    // --- PART B: WHATSAPP REDIRECT ---
+    // 3. Map entries to the hidden form
+    const dataMap = {
+        [formEntries.name]: name,
+        [formEntries.phone]: phone,
+        [formEntries.address]: address,
+        [formEntries.details]: fullDetails
+    };
+
+    for (const key in dataMap) {
+        const input = document.createElement('input');
+        input.type = "hidden";
+        input.name = key;
+        input.value = dataMap[key];
+        hiddenForm.appendChild(input);
+    }
+
+    // 4. Submit and cleanup
+    document.body.appendChild(hiddenForm);
+    hiddenForm.submit();
+    
+    setTimeout(() => {
+        document.body.removeChild(hiddenForm);
+        document.body.removeChild(iframe);
+    }, 2000);
+
+    // --- PART B: OPEN WHATSAPP ---
     const message = `*📦 NEW ORDER RECEIVED*\n\n*Name:* ${name}\n*Phone:* ${phone}\n*Address:* ${address}\n\n*Items Ordered:*\n${itemSummary}\n*GRAND TOTAL:* ₦${total}`;
     const whatsappUrl = `https://wa.me/${myWhatsAppNumber}?text=${encodeURIComponent(message)}`;
     
     window.open(whatsappUrl, '_blank');
 
-    // Reset UI
+    // Reset Site
     cart = [];
     localStorage.setItem('microCart', JSON.stringify(cart));
     updateCartUI();
