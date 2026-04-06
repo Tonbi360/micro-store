@@ -19,7 +19,11 @@
             <div class="menu-btn" onclick="toggleNav()">☰</div>
             
             <!-- Logo as a Home Link (Center) -->
-            <a href="index.html" class="logo">MicroStore</a>
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <a href="index.html" class="logo">MicroStore</a>
+                <!-- Trust Signal: Online Dot -->
+                <span style="width: 8px; height: 8px; background: #34a853; border-radius: 50%; display: inline-block;" title="Store Online"></span>
+            </div>
             
             <div class="header-right">
                 <!-- Toggleable Search Button -->
@@ -88,7 +92,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Order Details</h3>
-                <button class="close-btn" onclick="closeAll()">×</button>
+                <button class="close-btn" onclick="closeCheckout()">×</button>
             </div>
             <form id="orderForm" onsubmit="sendOrder(event)">
                 <div class="form-group">
@@ -117,4 +121,4 @@
     <!-- Linking to your separate JS file -->
     <script src="script.js"></script>
 </body>
-</html>
+                                                                         </html>
