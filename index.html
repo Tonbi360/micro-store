@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MicroStore Social Feed</title>
+    <style>
+        /* THE SOCIAL FEED LOOK */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #fafafa; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        .feed { max-width: 500px; width: 100%; margin-top: 20px; }
+        .post { background: white; border: 1px solid #dbdbdb; margin-bottom: 20px; border-radius: 3px; }
+        .post-header { padding: 10px; font-weight: bold; display: flex; justify-content: space-between; }
+        .post-img { width: 100%; display: block; background-color: #efefef; min-height: 300px; }
+        .post-info { padding: 15px; }
+        .post-title { font-weight: bold; margin-bottom: 5px; }
+        .post-price { color: #0095f6; font-weight: bold; font-size: 1.2rem; }
+        .buy-btn { background: #0095f6; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .loader { margin-top: 50px; color: #8e8e8e; }
+    </style>
+</head>
+<body>
+
+    <div class="feed" id="feed">
+        <div class="loader">Loading your feed...</div>
+    </div>
+
+    <script>
+        // YOUR UNIQUE CSV LINK
+        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTjGrtIZ52-LIFRgT0b9R2TmT595YNqFcx4VEMHXzx8T5ocOGraV3FXo8WOIPQEQYMbm4fb3Sq3tHwE/pub?output=csv";
+
+        async function loadFeed() {
+            try {
+                const response = await fetch(csvUrl);
+                const data = await response.text();
+                const rows = data.split("\n").slice(1); // Skip the header row
+                const feed = document.getElementById('feed');
+                feed.innerHTML = ""; // Clear loader
+
+                rows.forEach(row => {
+                    const cols = row.split(",");
+                    if (cols.length < 5) return; // Skip empty rows
+
+                    // Mapping: ID[0], Title[1], Price[2], Desc[3], Category[4], ImageID[5]
+                    const product = {
+                        title: cols[1],
+                        price: cols[2],
+                        desc: cols[3],
+                        category: cols[4],
+                        imgId: cols[5].trim()
+                    };
+
+                    // The "Social Feed" HTML Structure
+                    const post = document.createElement('div');
+                    post.className = 'post';
+                    post.innerHTML = `
+                        <div class="post-header">
+                            <span>${product.category}</span>
+                            <span>...</span>
+                        </div>
+                        <img class="post-img" src="https://drive.google.com/uc?id=${product.imgId}" alt="${product.title}">
+                        <div class="post-info">
+                            <div class="post-price">$${product.price}</div>
+                            <div class="post-title">${product.title}</div>
+                            <div class="post-desc">${product.desc}</div>
+                            <button class="buy-btn" onclick="order('${product.title}')">Add to Cart</button>
+                        </div>
+                    `;
+                    feed.appendChild(post);
+                });
+            } catch (error) {
+                document.getElementById('feed').innerHTML = "Error loading products. Check your Sheet privacy!";
+            }
+        }
+
+        function order(name) {
+            alert("Ordering: " + name + "\n(We will connect this to your WhatsApp later!)");
+        }
+
+        loadFeed();
+    </script>
+</body>
+</html>
