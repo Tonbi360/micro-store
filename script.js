@@ -1,6 +1,6 @@
 /* --- CONFIGURATION --- */
 const csvUrl = "https://docs.google.com/spreadsheets/d/1iQzRLCmtpgGHqYexl32m3EUY35_WgmXvi4CCHqdGzu4/export?format=csv";
-const myWhatsAppNumber = "234XXXXXXXXXX"; // <-- REPLACE WITH YOUR PHONE NUMBER (Format: 2348123456789)
+const myWhatsAppNumber = "2349022066352"; // <-- REPLACE WITH YOUR PHONE NUMBER (Format: 2348123456789)
 
 /* --- STATE MANAGEMENT --- */
 let allProducts = [];
