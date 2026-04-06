@@ -23,6 +23,18 @@
     display: block;
     background-color: #efefef;
         }
+        .post {
+    background: white;
+    border: 1px solid #dbdbdb;
+    margin-bottom: 30px; /* Space between posts */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* Soft shadow */
+}
+
+.post-img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+}
     </style>
 </head>
 <body>
@@ -64,7 +76,7 @@
                             <span>${product.category}</span>
                             <span>...</span>
                         </div>
-                        <img class="post-img" src="https://drive.google.com/uc?id=${product.imgId}" alt="${product.title}">
+                        <img class="post-img" src="https://lh3.googleusercontent.com/u/0/d/${product.imgId}" alt="${product.title}">
                         <div class="post-info">
                             <div class="post-price">₦${product.price}</div>
                             <div class="post-title">${product.title}</div>
