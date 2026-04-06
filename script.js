@@ -15,8 +15,24 @@ const formEntries = {
 let allProducts = [];
 let cart = JSON.parse(localStorage.getItem('microCart')) || [];
 
-/* --- 1. INITIAL LOAD --- */
+/* --- 1. INITIAL LOAD & CUSTOM LOADER --- */
 async function loadData() {
+    const feed = document.getElementById('feed');
+    
+    // Inject the "Living Loader" (Airplane + Dots)
+    feed.innerHTML = `
+        <div class="loader">
+            <div class="plane-animation">✈️</div>
+            <div class="loading-dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            <div class="loading-text">Fetching latest styles...</div>
+        </div>
+    `;
+
     try {
         const response = await fetch(csvUrl);
         const data = await response.text();
@@ -41,6 +57,7 @@ async function loadData() {
         updateCartUI();
     } catch (e) {
         console.error("Error loading products:", e);
+        feed.innerHTML = "<center style='margin-top:50px;'>Unable to connect. Please check your data/link.</center>";
     }
 }
 
@@ -84,6 +101,12 @@ function setupCategories() {
 function renderFeed(products) {
     const feed = document.getElementById('feed');
     if (!feed) return;
+    
+    if (products.length === 0) {
+        feed.innerHTML = "<center style='margin-top:40px;'>No matches found.</center>";
+        return;
+    }
+
     feed.innerHTML = products.map(p => {
         let buttonHTML = `<button class="buy-btn" onclick="addToCart('${p.id}')">Add to Cart</button>`;
         let badgeHTML = "";
@@ -136,18 +159,19 @@ function filterCategory(cat, element) {
 function handleLike(container) {
     const heart = container.querySelector('.heart-pop');
     heart.classList.remove('animate-heart');
-    void heart.offsetWidth; // Trigger reflow to restart animation
+    void heart.offsetWidth; // Force reflow
     heart.classList.add('animate-heart');
 }
 
 function shareProduct(title, id) {
+    // Generates a direct URL to the website
     const url = window.location.href;
     if (navigator.share) {
         navigator.share({
-            title: title,
-            text: `Check out this ${title} on MicroStore!`,
+            title: `MicroStore | ${title}`,
+            text: `Look what I found on MicroStore: ${title}`,
             url: url
-        }).catch(console.error);
+        }).catch(err => console.log("Share failed", err));
     } else {
         // Fallback: Copy to clipboard
         navigator.clipboard.writeText(url);
@@ -164,8 +188,9 @@ function addToCart(id) {
     saveCart();
     updateCartUI();
     
-    // Non-obstructive feedback: quick scale on cart icon
+    // Visual feedback on the cart icon (quick bounce)
     const icon = document.querySelector('.cart-icon');
+    icon.style.transition = "0.2s";
     icon.style.transform = "scale(1.2)";
     setTimeout(() => icon.style.transform = "scale(1)", 200);
 }
@@ -203,12 +228,12 @@ function updateCartUI() {
         `;
     }).join('');
     
-    if(cart.length === 0) cartItems.innerHTML = "<center>Cart is empty</center>";
+    if(cart.length === 0) cartItems.innerHTML = "<center style='margin-top:20px'>Your cart is empty</center>";
     cartTotal.innerText = `₦${total}`;
     if(document.getElementById('modalTotal')) document.getElementById('modalTotal').innerText = `₦${total}`;
 }
 
-/* --- 6. CHECKOUT & BULLETPROOF LOGGING --- */
+/* --- 6. CHECKOUT & LOGGING ENGINE --- */
 function openCheckout() {
     if (cart.length === 0) return;
     toggleCart();
@@ -232,7 +257,7 @@ function sendOrder(event) {
 
     const fullDetails = `Total: ₦${total}\nItems:\n${itemSummary}`;
 
-    // --- PART A: THE BULLETPROOF "SILENT" LOG (Invisible Iframe) ---
+    // --- PART A: SILENT FORM LOG (Invisible Iframe) ---
     const iframeId = "hidden_iframe_" + Date.now();
     const iframe = document.createElement('iframe');
     iframe.name = iframeId;
@@ -264,19 +289,18 @@ function sendOrder(event) {
     document.body.appendChild(hiddenForm);
     hiddenForm.submit();
     
-    // Cleanup
     setTimeout(() => {
         if(document.body.contains(hiddenForm)) document.body.removeChild(hiddenForm);
         if(document.body.contains(iframe)) document.body.removeChild(iframe);
     }, 2000);
 
-    // --- PART B: OPEN WHATSAPP ---
+    // --- PART B: WHATSAPP REDIRECT ---
     const message = `*📦 NEW ORDER RECEIVED*\n\n*Name:* ${name}\n*Phone:* ${phone}\n*Address:* ${address}\n\n*Items Ordered:*\n${itemSummary}\n*GRAND TOTAL:* ₦${total}`;
     const whatsappUrl = `https://wa.me/${myWhatsAppNumber}?text=${encodeURIComponent(message)}`;
     
     window.open(whatsappUrl, '_blank');
 
-    // Reset Site
+    // Reset UI
     cart = [];
     localStorage.setItem('microCart', JSON.stringify(cart));
     updateCartUI();
