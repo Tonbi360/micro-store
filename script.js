@@ -1,16 +1,24 @@
 /* --- CONFIGURATION --- */
-const csvUrl = "https://docs.google.com/spreadsheets/d/1iQzRLCmtpgGHqYexl32m3EUY35_WgmXvi4CCHqdGzu4/export?format=csv";
-const myWhatsAppNumber = "2349022066352"; 
+// 1. Get the "Store Info" from the URL link
+const urlParams = new URLSearchParams(window.location.search);
 
-// GOOGLE FORM LOGGING CONFIGURATION
-const formActionUrl = "https://docs.google.com/forms/d/e/1FAIpQLScTKqoankmnGROcBf84r4fyWolrfTH2NEdGSI7MOyW_RycqEQ/formResponse";
+// 2. Look for a Sheet ID in the link. If none, it uses your default one.
+const sheetId = urlParams.get('s') || "1iQzRLCmtpgGHqYexl32m3EUY35_WgmXvi4CCHqdGzu4";
+const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+
+// 3. Look for a WhatsApp number in the link. If none, it uses yours.
+const myWhatsAppNumber = urlParams.get('w') || "2349022066352"; 
+
+// 4. Look for a Google Form ID in the link (for logging). If none, it uses yours.
+const formId = urlParams.get('f') || "1FAIpQLScTKqoankmnGROcBf84r4fyWolrfTH2NEdGSI7MOyW_RycqEQ";
+const formActionUrl = `https://docs.google.com/forms/d/e/${formId}/formResponse`;
+
 const formEntries = {
     name: "entry.980833548",
     phone: "entry.936037984",
     address: "entry.2118146560",
     details: "entry.1531993443"
 };
-
 /* --- STATE MANAGEMENT --- */
 let allProducts = [];
 let cart = JSON.parse(localStorage.getItem('microCart')) || [];
